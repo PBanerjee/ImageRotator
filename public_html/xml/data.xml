@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+    <slides>
+        <slide>
+            <image>images/beauty1.jpg</image>
+            <heading>The Beauty 1</heading>
+            <description>This is beauty 1</description>
+        </slide>
+        <slide>
+            <image>images/beauty2.jpg</image>
+            <heading>The Beauty 2</heading>
+            <description>This is beauty 2</description>
+        </slide>
+        <slide>
+            <image>images/beauty3.jpg</image>
+            <heading>The Beauty 3</heading>
+            <description>This is beauty 3</description>
+        </slide>
+    </slides>
+    <styles>
+
+    </styles>
+</data>
