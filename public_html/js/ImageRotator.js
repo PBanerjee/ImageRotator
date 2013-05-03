@@ -1,5 +1,60 @@
 /* Scope and self initiation */
 
+//event architecture
+(function(glob){
+    var Event = function(scope){
+        this.scope = scope;
+    };
+
+    //blue prints
+    Event.prototype = {
+        listeners: [],
+
+        addEventListener: function(eventType, callback){
+            //check if eventType and callback is defined
+            //or fail silently.
+            if(!eventType || !callback){
+                return;
+            }
+            //if eventType is not added to the listeners
+            //hash table. Add It.
+            if(!this.listeners[eventType]){
+                this.listeners[eventType] = {
+                    eventType: eventType,
+                    callback: callback
+                }
+            }
+        },
+
+        removeEventListener: function(eventType){
+            //if eventType is not defined, there is
+            //nothing to do
+            if(!eventType){
+                return;
+            }
+            //now check whether any event exists as eventType
+            //in the listeners hashTable and then delete
+            if(this.listeners[eventType]){
+                this.listeners[eventType] = null;
+            }
+        },
+
+        dispatchEvent: function(eventType){
+            //get the obj from the listeners hashTable
+            var evtObj = this.listeners[eventType],
+                callback = evtObj && evtObj.callback;
+
+            if(callback){
+                callback.call(this.scope);
+            }
+        }
+    };
+
+    //expose to the global scope
+    glob.Event = Event;
+
+}(this));
+
 (function(window, $){
 
     /*
@@ -13,6 +68,8 @@
         this.dataObj = data;
         //start data fectching or parsing
         this.dataObj && this.getData();
+        //subscribe to the event object
+        this.event = new Event(this);
     };
 
     //default options
@@ -21,35 +78,6 @@
     };
 
     ImageRotator.prototype = {
-        /*
-         * function to load the data.
-         */
-        getData: function(){
-            var dataObj = this.dataObj,
-                dataXML = dataObj && dataObj.dataXML,
-                dataURL = dataObj && dataObj.dataURL;
-            //check if dataObj is defined or return
-            if(!dataObj){
-                return;
-            }
-            //now depending on the data type either loads the data
-            //or parse it.
-            if(dataXML && dataXML.length > 0){
-                //parse the XML
-                this.parseXML(dataXML);
-            }else if(dataURL){
-                //load the XML
-                $.ajax({
-                   url: dataURL,
-                   success: this.parseXML,
-                   error: function(e){
-                       //@todo: need to define a proper error report
-                       //mechanism.
-                       console.log(e.responseText);
-                   }
-                });
-            }
-        },
 
         /*
          * method to parse XML
@@ -76,31 +104,61 @@
                     childNodes = this.childNodes,
                     numSlides = childNodes && childNodes.length,
                     i,
-                    node;
+                    node,
+                    nodeName;
 
                 for(i = 0; i < numSlides; i += 1){
                     node = childNodes[i];
+                    nodeName = node && node.nodeName.toLowerCase();
 
-                    switch(node.nodeName.toLowerCase()){
-                        case 'image' :
-                            slide.image = $(node).text();
-                            break;
-                        case 'heading' :
-                            slide.heading = $(node).text();
-                            break;
-                        case 'description' :
-                            slide.description = $(node).text();
-                            break;
-                        default:
-                            //do nothing
+                    if(nodeName === 'image' || nodeName === 'heading'
+                                        || nodeName === 'description'){
+                        slide[nodeName] = $(node).text();
                     }
                 }
                 slides.push(slide);
             });
             //update class level sildes object
-            debugger;
             this.slides = slides;
+            //fire XML parse complete event
+            this.event.dispatchEvent('xml-parsed');
+        },
+
+        /*
+         * function to load the data.
+         */
+        getData: function(){
+            var dataObj = this.dataObj,
+                dataXML = dataObj && dataObj.dataXML,
+                dataURL = dataObj && dataObj.dataURL,
+                scope = this;
+            //check if dataObj is defined or return
+            if(!dataObj){
+                return;
+            }
+            //now depending on the data type either loads the data
+            //or parse it.
+            if(dataXML && dataXML.length > 0){
+                //parse the XML
+                this.parseXML(dataXML);
+            }else if(dataURL){
+                //load the XML
+                $.ajax({
+                   scope: scope, // parent scope need to be passed.
+                   url: dataURL,
+                   success: function(args){
+                       this.scope.parseXML(args);
+                   },
+                   error: function(e){
+                       //@todo: need to define a proper error report
+                       //mechanism.
+                       console.log(e.responseText);
+                   }
+                });
+            }
         }
+
+
 
     };
 

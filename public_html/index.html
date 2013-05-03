@@ -1,7 +1,3 @@
-<!--
-To change this template, choose Tools | Templates
-and open the template in the editor.
--->
 <!DOCTYPE html>
 <html>
     <head>
@@ -20,6 +16,12 @@ and open the template in the editor.
             };
 
             var imgRot = new ImageRotator(dataObj);
+            //@todo: need to improve architecture to call addEventListener
+            //directly on the instance.
+            imgRot.event.addEventListener('xml-parsed', function(){
+                //now we are ready for rendering.
+                console.log(this.slides);
+            })
 
         </script>
     </body>
