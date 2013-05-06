@@ -1,0 +1,22 @@
+/*
+    Document   : imageRotator
+    Created on : May 6, 2013, 3:41:57 PM
+    Author     : pallab.banerjee
+    Description:
+        The basic or default style sheet for elements in image rotator.
+*/
+
+#imageContainer{
+    position: absolute;
+    width: 70%;
+    left: 0;
+    background-color: #CC0000;
+}
+
+#textContainer{
+    position: absolute;
+    width: 30%;
+    right: 0;
+    background-color: #11CC00;
+}
+

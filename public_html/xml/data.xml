@@ -2,22 +2,25 @@
 <data>
     <slides>
         <slide>
-            <image>images/beauty1.jpg</image>
-            <heading>The Beauty 1</heading>
-            <description>This is beauty 1</description>
+            <image styleId='imageStyle'>images/beauty1.jpg</image>
+            <altText>Image 01</altText>
+            <heading type='h3'>The Beauty 1</heading>
+            <description type='p'>This is beauty 1</description>
         </slide>
         <slide>
-            <image>images/beauty2.jpg</image>
-            <heading>The Beauty 2</heading>
-            <description>This is beauty 2</description>
+            <image styleId='imageStyle'>images/beauty2.jpg</image>
+            <altText>Image 02</altText>
+            <heading type='h3'>The Beauty 2</heading>
+            <description type='p'>This is beauty 2</description>
         </slide>
         <slide>
-            <image>images/beauty3.jpg</image>
-            <heading>The Beauty 3</heading>
-            <description>This is beauty 3</description>
+            <image styleId='imageStyle'>images/beauty3.jpg</image>
+            <altText>Image 03</altText>
+            <heading type='h3'>The Beauty 3</heading>
+            <description type='p'>This is beauty 3</description>
         </slide>
     </slides>
     <styles>
-
+        <style id="imageStyle" display='block' border='none' padding='0' margin='auto' top='0' left='0'/>
     </styles>
 </data>

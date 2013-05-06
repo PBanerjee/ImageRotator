@@ -1,0 +1,30 @@
+/*
+    Document   : base
+    Created on : May 6, 2013, 4:06:40 PM
+    Author     : pallab.banerjee
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+body{
+    margin: 0;
+    padding: 0;
+}
+
+ul{
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    list-style-type: none;
+}
+
+#slide-container{
+    position: absolute;
+    height: 56%;
+    width: 90%;
+    margin: 10px 5%;
+    padding: 0;
+    overflow: hidden;
+    background-color: #CCCCCC;
+}
+

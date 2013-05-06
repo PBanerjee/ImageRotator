@@ -6,6 +6,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script type="text/javascript" src="js/libraries/JQuery/jquery-1.9.1.js"></script>
         <script type="text/javascript" src="js/ImageRotator.js"></script>
+        <link type="text/css" media="screen" rel="stylesheet" href="css/base.css">
+        <link type="text/css" media="screen" rel="stylesheet" href="css/imageRotator.css">
     </head>
     <body>
         <div id="slide-container"></div>
@@ -15,12 +17,18 @@
                 dataURL: 'xml/data.xml'
             };
 
-            var imgRot = new ImageRotator(dataObj);
+            var imgRot = new ImageRotator(dataObj, 'slide-container');
             //@todo: need to improve architecture to call addEventListener
             //directly on the instance.
             imgRot.event.addEventListener('xml-parsed', function(){
                 //now we are ready for rendering.
-                console.log(this.slides);
+                imgRot.render();
+            });
+
+            //start slide show after all elements are created
+            imgRot.event.addEventListener('creation-complete', function(){
+               //start the show
+               imgRot.startRotate();
             })
 
         </script>
