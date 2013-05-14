@@ -47,7 +47,7 @@
             var evtObj = this.listeners[eventType],
                 callback = evtObj && evtObj.callback,
                 i = 0,
-                numCallbcks = callback.length;
+                numCallbcks = callback && callback.length;
 
             for(i; i < numCallbcks; i += 1){
                 if(callback[i]){
@@ -69,10 +69,14 @@
      *                  or the url for the XML.
      */
     var ImageRotator = function(data, containerDivID){
+        //list of containers
+        this.containers = [];
         //list of slides
         this.slides = [];
         //list of styles
         this.styles = [];
+        //list of animations
+        this.animations = [];
         //list of slide elements as a batch
         this.slideElems = [];
         //need to load or parse the data.
@@ -86,10 +90,10 @@
         this.container = $("#"+containerDivID);
         //default options
         this.defaults = {
-            speed: 500, //ms
+            speed: 1000, //ms
             stay: 5000,
             animating: false,
-            currentSlide: 0
+            currentSlide: null
         };
 
     };
@@ -101,9 +105,12 @@
          */
 
         parseXML: function(xmlData){
-            var xmlDoc,
-                slides = this.slides || [],
-                styles = this.styles || [];
+            var imgRotator = this,
+                xmlDoc,
+                dataCues,
+                i,
+                cue,
+                cueLength;
             //check whether the passed data is in XML format
             //remove white spaces (trim)
             if(xmlData.childNodes){
@@ -116,50 +123,61 @@
             else{
                 xmlDoc = $.parseXML($.trim(xmlData));
             }
-            //iterate over the slides and store data
-            $(xmlDoc).find("slide").each(function(){
-                var slide = {},
-                    childNodes = this.childNodes,
-                    numSlides = childNodes && childNodes.length,
-                    i,
-                    node,
-                    nodeName;
 
-                for(i = 0; i < numSlides; i += 1){
-                    node = childNodes[i];
-                    nodeName = node && node.nodeName.toLowerCase();
+            //now get the top level data cues to parse data
+            dataCues = $(xmlDoc.firstChild).attr('dataCues');
+            dataCues && (dataCues = dataCues.split(','));
+            for(i = 0, cueLength = dataCues.length; i < cueLength; i += 1){
+                cue = dataCues[i];
+                $(xmlDoc).find(cue).each(function(){
+                    var node = this,
+                        nodeName = node && node.nodeName.toLowerCase(),
+                        obj = {},
+                        chldNodes = node && node.childNodes,
+                        globalArray,
+                        parseAttribute;
 
-                    if(nodeName === 'image' || nodeName === 'heading'
-                                        || nodeName === 'description'){
-                        //check if any style is assigned
-                        slide[nodeName] = {
-                            styleId: $(node).attr("styleId"),
-                            type: $(node).attr("type")
-                        }
-                        //nodeName is used to store the value
-                        slide[nodeName][nodeName] = $(node).text();
+                    //attribute parsing for any given node
+                    parseAttribute = function(node){
+                        var obj = {},
+                            attrMap = node && node.attributes;
+
+                        $(attrMap).each(function(){
+                            obj[this.nodeName] = this.nodeValue;
+                        });
+
+                        return obj;
                     }
-                }
-                slides.push(slide);
-            });
-            //update class level sildes object
-            this.slides = slides;
 
-            //iterate over the style object and store data
-            $(xmlDoc).find("style").each(function(){
-                var style = {},
-                    attrMap = this.attributes;
+                    //get the attributes for this node
+                    obj = parseAttribute(node);
+                    //get to the next level
+                    $(chldNodes).each(function(){
+                        var chldNode = this,
+                            nodeName = chldNode &&
+                                    chldNode.nodeName.toLowerCase();
 
-                $.each(attrMap, function(){
-                    style[this.nodeName] = this.nodeValue;
-                });
-                //for easy reference
-                styles[style.id] = style;
+                        //ignoring white space is not working
+                        //to bypass this we should omit any node, which strts with
+                        //a # sign
+                        if(nodeName.charAt(0) === "#"){
+                            //skip
+                            return;
+                        }
 
-                styles.push(style);
-            });
-            //update class level style object
-            this.styles = styles;
+                        obj[nodeName] = parseAttribute(chldNode);
+                        //node value
+                        obj[nodeName]['value'] = $(chldNode).text();
+                    });
+                    //add to the global arrays
+                    globalArray = imgRotator[nodeName+'s'];
+                    //if object has a id property for easy refernce
+                    //store the objcet in the global array with id as key
+                    obj.id && (globalArray[obj.id] = obj);
+                    //store with index.
+                    globalArray && globalArray.push(obj);
+                })
+            };
 
             //fire XML parse complete event
             this.event.dispatchEvent('xml-parsed');
@@ -200,92 +218,104 @@
         },
 
         /*
+         * A recursive method to create elements
+         */
+        createElement: function(elementObj){
+            //if element object or object type is not defined
+            //nothing to do
+            if(!elementObj || !elementObj.type){
+                return;
+            }
+
+            var topContainer = this.container,
+                containers = this.containers,
+                elementId = elementObj.id,
+                styleId = elementObj.styleId,
+                parentContId = elementObj.containerId,
+                parentContainer = parentContId && containers[parentContId] &&
+                                    containers[parentContId].containerElement,
+                container,
+
+                elementType = elementObj.type,
+                elemStr = '<'+elementType+'></'+elementType+'>',
+                element;
+
+            /*
+             * in case parent container is undefined
+             * check whether any element exist with the parent Id
+             */
+            parentContainer = $('#'+parentContId)[0];
+            /* In case parent container is still undefined
+             * either the parent container is not created
+             * or this element to be added to the main container
+             */
+            if(!parentContainer){
+
+
+                parentContainer = parentContId ?
+                                    this.createElement(containers[parentContId])
+                                    : topContainer;
+            }
+
+            //create and append to the parent element
+            element = $(elemStr).appendTo(parentContainer);
+            //add the common attributes
+            element.attr('id', elementId);
+            //specific attribute managements
+            switch(elementType){
+                case 'img' :
+                    elementObj.value &&
+                            element.attr('src', elementObj.value);
+                    break;
+                default :
+                    elementObj.value &&
+                            element.html(elementObj.value);
+
+            }
+            //apply the styles
+            styleId && this.applyStyles(element, styleId);
+            //add to the containers array if id is defined
+            if(elementId){
+                container = this.containers[elementId] || {};
+                container.containerElement = element;
+            }
+            return element;
+
+        },
+
+        /*
          * function render content
          */
         render: function(){
-            var imageContainer = $('<div id="imageContainer"></div>'),
-                ulElem = $('<ul></ul>'),
-                textContainer = $('<div id="textContainer"></div>'),
-                i = 0,
-                slides = this.slides,
+            var slides = this.slides,
+                containers = this.containers,
+                slide,
+                elementObj,
+                element,
+                containerElem,
                 numSlides = slides && slides.length,
-                slideObj,
-                imgObj,
-                imgSrc,
-                imgStyleId,
-                imgAltText,
-                imgElem,
-                headingObj,
-                headingType,
-                headingStyleId,
-                heading,
-                headerElem,
-                descObj,
-                descType,
-                descStyleId,
-                description,
-                descElem;
+                containerId,
+                i;
 
-             //append the div for the container of images
-            this.container.append(imageContainer);
-            //append the UL element to the image container.
-            imageContainer.append(ulElem);
-            //append the div for the container of heading & descriptions
-            this.container.append(textContainer);
-            //now dynimically create the images element based
-            //on the slides
-            for(i; i < numSlides; i += 1){
-                slideObj = slides[i];
-                //image
-                imgObj = slideObj.image;
-                imgSrc = imgObj.image;
-                imgStyleId = imgObj.styleId;
-                imgAltText = slideObj.altText || "image"+i;
-                //create the image lement
-                imgElem = $("<img src='"+imgSrc+"' alt='"+imgAltText+"' />");
-                //now apply the style property is defined, apply to this elem
-                imgStyleId && this.applyStyles(imgElem, imgStyleId);
-                //append to the UL element
-                ulElem.append(imgElem);
-                //initially hide them
-                imgElem.hide();
+            for(i = 0; i < numSlides; i += 1){
 
-                //heading
-                headingObj = slideObj.heading;
-                headingType = headingObj && headingObj.type;
-                headingStyleId = headingObj && headingObj.styleId;
-                heading = headingObj && headingObj.heading;
-                //create the header element
-                headerElem = $("<"+headingType+">"+heading+"</"+headingType+">");
-                //apply style
-                headingStyleId && this.applyStyles(headerElem, headingStyleId);
-                //append to the div
-                textContainer.append(headerElem);
-                //initially hide
-                headerElem.hide();
-
-                //description
-                descObj = slideObj.description;
-                descType = descObj && descObj.type;
-                descStyleId = descObj && descObj.styleId;
-                description = descObj && descObj.description;
-                //create the description element
-                descElem = $("<"+descType+">"+description+"</"+descType+">");
-                //apply style
-                descStyleId && this.applyStyle(descElem, descStyleId);
-                //append
-                textContainer.append(descElem);
-                //initially hide
-                descElem.hide();
-
-                //add to the global slide Elements array
-                this.slideElems[i] = {
-                    image_element: imgElem,
-                    header_element: headerElem,
-                    desc_element: descElem
-                };
+                slide = slides[i];
+                this.slideElems[i] = {};
+                //iterate over each elements of a single slide
+                for(var prop in slide){
+                    //only child elements of a slide node
+                    //can be a separate HTML element
+                    if(slide[prop] instanceof Object){
+                        elementObj = slide[prop];
+                        element = this.createElement(elementObj);
+                        debugger;
+                        if(elementObj.excludeAnimation !== 'true'){
+                            this.slideElems[i][prop] = element;
+                            element.hide();
+                        }
+                    }
+                }
             }
-
             //fire the creation complete event
             this.event.dispatchEvent('creation-complete');
         },
@@ -300,61 +330,159 @@
             }
         },
 
-        startRotate: function(){
-            //put in a loop
-            var scope = this;
-            setTimeout( function(){
-                scope.hidePrevSlide.call(scope);
-                scope.showNextSlide.call(scope);
-            }, this.defaults.speed);
+        changeSlide: function(){
+            var imgRot = this,
+                currentSlideNum = this.defaults.currentSlide,
+                slides = this.slides,
+                animations = this.animations,
+                slideElems = this.slideElems,
+                totalSlides = slideElems && slideElems.length,
+                nextSlideNum,
+                currentSlideObj,
+                nextSlideObj,
+                currentSlideElem,
+                nextSlideElem,
+                hideAnimId,
+                showAnimId,
+                hideAnimObj,
+                showAnimObj,
+                overlappingAnim,
+                conCallBack;
+
+            //if current slide is null (first time) and is not 0 (as zero will
+            //also be evaluated to false), assign the base -1 current slide
+            //number
+            !currentSlideNum && currentSlideNum !== 0 && (currentSlideNum = -1);
+            //now based on the current slide get the next slide
+            nextSlideNum = currentSlideNum ===
+                    (totalSlides - 1) ? 0 : currentSlideNum + 1;
+
+            //get slide objects and elements
+            currentSlideObj = slides[currentSlideNum] || {};
+            currentSlideElem = slideElems[currentSlideNum] || {};
+            hideAnimId = currentSlideObj.hideAnimId;
+            hideAnimObj = animations[hideAnimId];
+
+            nextSlideObj = slides[nextSlideNum];
+            nextSlideElem = slideElems[nextSlideNum] || {};
+            showAnimId = nextSlideObj.showAnimId;
+            showAnimObj = animations[showAnimId];
+
+            //start the hide animation
+            if(hideAnimObj){
+                //if continuous animation is off
+                overlappingAnim = hideAnimObj.continue;
+
+                if(overlappingAnim === 'false'){
+                    conCallBack = function(){
+                        imgRot.initAnimation(showAnimObj, nextSlideElem,
+                                            imgRot.animationComplete,
+                                            imgRot.startStay);
+                    }
+
+                    this.initAnimation(hideAnimObj, currentSlideElem,
+                                this.animationComplete, conCallBack);
+
+                }
+                //if show and hide animation need to run simaltenously
+                //default case.
+                else{
+                    this.initAnimation(showAnimObj, nextSlideElem,
+                                this.animationComplete, this.startStay);
+                    this.initAnimation(hideAnimObj, currentSlideElem,
+                                this.animationComplete);
+
+                }
+
+            }
+            //in case no hide animation start the show animation
+            //first time execution
+            else if(showAnimObj){
+                this.initAnimation(showAnimObj, nextSlideElem,
+                                this.animationComplete, this.startStay);
+            }
+            //update current slider
+            this.defaults.currentSlide = nextSlideNum;
         },
 
-        hidePrevSlide: function(){
-            var prevSlide = this.defaults.currentSlide - 1,
-                numSlides = this.slideElems && this.slideElems.length,
-                slideObj;
+        initAnimation: function(animObj, elementToAnimate,
+                                    callback, allCompleteCallback){
 
-            //if there is no current slide nothing to do
-            if((prevSlide != 0 && prevSlide < 0) ||
-                            prevSlide >= numSlides){
+            callback && (animObj.callback = callback);
+            allCompleteCallback &&
+                    (animObj.allCompleteCallback = allCompleteCallback);
+            elementToAnimate &&
+                    this.animate(elementToAnimate, animObj);
+
+        },
+
+        animate: function(elements, animObj){
+            var e,
+                elem,
+                scope = this,
+                noElems = 0;
+
+            if(animObj){
+                for(e in elements){
+                    elem = $(elements[e]);
+                    var obj = {
+                        duration: parseInt(animObj.duration),
+                        complete: function(){
+                            animObj.callback.call(scope,
+                                                    scope,
+                                                animObj.allCompleteCallback,
+                                                animObj);
+                        }
+                    };
+                    elem[animObj.type].call(elem, obj);
+                    //for each element animated we increase the counter
+                    noElems += 1;
+                }
+                //update to the class level variable
+                animObj.numAnimElems = noElems;
+            }
+        },
+
+        animationComplete: function(scope, callback, animObj){
+            var totalNumAnimElems = animObj.numAnimElems || 0,
+                completedNumAnim = animObj.numCompleteAnim || 0;
+
+            //scope is bound to imageRotator if undefined
+            scope = scope || this;
+            //increase the completed animation counter
+            completedNumAnim += 1;
+
+            if(completedNumAnim >= totalNumAnimElems){
+                //re state global counters
+                animObj.numCompleteAnim = 0;
+                animObj.numAnimElems = 0;
+                //need to initiate the callback process
+                //if defined
+                callback && callback.call(scope);
+                //no further excution from here
                 return;
             }
-
-            //hide the current elements
-            slideObj = this.slideElems[prevSlide];
-
-            //hide all elements
-            $(slideObj.image_element).hide();
-            $(slideObj.header_element).hide();
-            $(slideObj.desc_element).hide();
+            //otherwise just increase the counter
+            animObj.numCompleteAnim = completedNumAnim;
         },
 
-        showNextSlide: function(){
-            var currentSlide = this.defaults.currentSlide ||
-                                (this.defaults.currentSlide = 0),
-                numSlides = this.slideElems && this.slideElems.length,
-                slideObj,
-                scope = this;
+        startStay: function(){
+            //from here after the stipulated stay time
+            //fire the change slide method
+            var imgRot = this,
+                stayDuration = this.defaults.stay;
 
-            if(currentSlide >= numSlides){
-               currentSlide = 0
-            }
+            //fire the stay start event @todo: think better name
+            this.event.dispatchEvent('stay-start');
 
-            slideObj = this.slideElems[currentSlide];
-
-            //show all elements
-            $(slideObj.image_element).show();
-            $(slideObj.header_element).show();
-            $(slideObj.desc_element).show();
-
-             //increase the counter
-            this.defaults.currentSlide = currentSlide + 1;
-
-            //call next slide after the stay duration
             setTimeout(function(){
-                scope.startRotate.call(scope);
-            }, this.defaults.stay);
+                //fire the stay complete event
+                imgRot.event.dispatchEvent('stay-complete');
+                //call for the next slide
+                imgRot.changeSlide.call(imgRot);
+            },stayDuration);
         }
+
     };
 
     //expose to the global scope

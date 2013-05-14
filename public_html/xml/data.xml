@@ -1,26 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<data>
+<data dataCues='container,slide,style,animation'>
+    <containers>
+        <!-- containers itself can be inside another container -->
+        <container type='div' id='image_container' styleId='container1' />
+        <container type='ul' id='image_list' containerId='image_container' styleId='imageListStyle'></container>
+        <container type='div' id='text_container' styleId='container2' />
+    </containers>
     <slides>
-        <slide>
-            <image styleId='imageStyle'>images/beauty1.jpg</image>
-            <altText>Image 01</altText>
-            <heading type='h3'>The Beauty 1</heading>
-            <description type='p'>This is beauty 1</description>
+        <slide showAnimId='slide_fadeIn' hideAnimId='slide_fadeOut'>
+            <list id='list1' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>
+            <image type='img' styleId='imageStyle' containerId='list1'>images/beauty1.jpg</image>
+            <heading type='h3' containerId='text_container' styleId='headerStyle'>The Beauty 1</heading>
+            <description type='p' containerId='text_container' styleId='descStyle'>This is beauty 1</description>
         </slide>
-        <slide>
-            <image styleId='imageStyle'>images/beauty2.jpg</image>
-            <altText>Image 02</altText>
-            <heading type='h3'>The Beauty 2</heading>
-            <description type='p'>This is beauty 2</description>
+        <slide showAnimId='slide_fadeIn' hideAnimId='slide_fadeOut'>
+            <list id='list2' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>
+            <image type='img' styleId='imageStyle' containerId='list2'>images/beauty2.jpg</image>
+            <heading type='h3' containerId='text_container' styleId='headerStyle'>The Beauty 2</heading>
+            <description type='p' containerId='text_container' styleId='descStyle'>This is beauty 2</description>
         </slide>
-        <slide>
-            <image styleId='imageStyle'>images/beauty3.jpg</image>
-            <altText>Image 03</altText>
-            <heading type='h3'>The Beauty 3</heading>
-            <description type='p'>This is beauty 3</description>
+        <slide showAnimId='slide_fadeIn' hideAnimId='slide_fadeOut'>
+            <list id='list3' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>
+            <image type='img' styleId='imageStyle' containerId='list3'>images/beauty3.jpg</image>
+            <heading type='h3' containerId='text_container' styleId='headerStyle'>The Beauty 3</heading>
+            <description type='p' containerId='text_container' styleId='descStyle'>This is beauty 3</description>
         </slide>
     </slides>
     <styles>
-        <style id="imageStyle" display='block' border='none' padding='0' margin='auto' top='0' left='0'/>
+        <style id='container1' position='absolute' width='70%' height='100%' left='0' text-align='center'></style>
+        <style id='imageListStyle' position='absolute' padding='0' margin='0' width='100%' height='100%' list-style-type='none' white-space='nowrap'></style>
+        <style id='imageLiContainer' padding='0' margin='0' width='100%' height='100%' position='absolute'></style>
+        <style id='imageStyle' display='block' border='none' padding='0' margin='0 auto'></style>
+
+        <style id='container2' position='absolute' width='30%' height='100%' right='0'></style>
+        <style id='headerStyle' position='absolute' top='10px' left='12px' margin='0' padding='0'></style>
+        <style id='descStyle' position='absolute' top='40px' left='18px' margin='0' padding='0'></style>
     </styles>
+    <animations>
+        <animation type='fadeIn' duration='5000' id='slide_fadeIn' continue='false'/>
+        <animation type='fadeOut' duration='5000' id='slide_fadeOut' continue='true'/>
+    </animations>
 </data>
