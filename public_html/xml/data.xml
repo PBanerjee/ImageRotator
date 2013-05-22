@@ -1,43 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<data dataCues='container,slide,style,animation'>
+<data dataCues='container,slide,style,animation,navigator' autoChange='false'>
     <containers>
         <!-- containers itself can be inside another container -->
         <container type='div' id='image_container' styleId='container1' />
-        <container type='ul' id='image_list' containerId='image_container' styleId='imageListStyle'></container>
         <container type='div' id='text_container' styleId='container2' />
+        <container type='div' id='navigator_container' styleId='navContStyle' />
     </containers>
     <slides>
-        <slide showAnimId='slide_fadeIn' hideAnimId='slide_fadeOut'>
-            <list id='list1' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>
-            <image type='img' styleId='imageStyle' containerId='list1'>images/beauty1.jpg</image>
-            <heading type='h3' containerId='text_container' styleId='headerStyle'>The Beauty 1</heading>
-            <description type='p' containerId='text_container' styleId='descStyle'>This is beauty 1</description>
+        <slide showAnimId='anim_fadeIn' hideAnimId='anim_fadeOut'>
+            <image type='img' styleId='imageStyle' containerId='image_container' showAnimId='anim_fadeIn' hideAnimId='anim_fadeOut'>images/beauty1.jpg</image>
+            <heading type='h3' containerId='text_container' styleId='headerStyle' showAnimId='anim_SlideIn' hideAnimId='anim_SlideOut'>The Beauty 1</heading>
+            <description type='p' containerId='text_container' styleId='descStyle' showAnimId='anim_SlideIn' hideAnimId='anim_SlideOut'>If you are a developer (regardless of what you develop), you know that testing your product out is one of the most important steps in the development process. Apart from running functionality tests you might also need to run scalability as well as compatibility tests and that’s where dummy data come in.</description>
         </slide>
-        <slide showAnimId='slide_fadeIn' hideAnimId='slide_fadeOut'>
-            <list id='list2' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>
-            <image type='img' styleId='imageStyle' containerId='list2'>images/beauty2.jpg</image>
-            <heading type='h3' containerId='text_container' styleId='headerStyle'>The Beauty 2</heading>
-            <description type='p' containerId='text_container' styleId='descStyle'>This is beauty 2</description>
+        <slide showAnimId='anim_fadeIn' hideAnimId='anim_fadeOut'>
+            <image type='img' styleId='imageStyle' containerId='image_container' showAnimId='anim_fadeIn' hideAnimId='anim_fadeOut'>images/beauty2.jpg</image>
+            <heading type='h3' containerId='text_container' styleId='headerStyle' showAnimId='anim_SlideIn' hideAnimId='anim_SlideOut'>The Beauty 2</heading>
+            <description type='p' containerId='text_container' styleId='descStyle' showAnimId='anim_SlideIn' hideAnimId='anim_SlideOut'>For WordPress you will most of the time need dummy data for posts, users or categories, things that take times to manually create. It is, therefore, much quicker and convenient if you have a tool to automatically generate those data. Fortunately there are some ready-made ones out there that can help you with such task and you will know more about them after reading this article.</description>
         </slide>
-        <slide showAnimId='slide_fadeIn' hideAnimId='slide_fadeOut'>
-            <list id='list3' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>
-            <image type='img' styleId='imageStyle' containerId='list3'>images/beauty3.jpg</image>
-            <heading type='h3' containerId='text_container' styleId='headerStyle'>The Beauty 3</heading>
-            <description type='p' containerId='text_container' styleId='descStyle'>This is beauty 3</description>
+        <slide showAnimId='anim_fadeIn' hideAnimId='anim_fadeOut'>
+            <image type='img' styleId='imageStyle' containerId='image_container' showAnimId='anim_fadeIn' hideAnimId='anim_fadeOut'>images/beauty3.jpg</image>
+            <heading type='h3' containerId='text_container' styleId='headerStyle' showAnimId='anim_SlideIn' hideAnimId='anim_SlideOut'>The Beauty 3</heading>
+            <description type='p' containerId='text_container' styleId='descStyle' showAnimId='anim_SlideIn' hideAnimId='anim_SlideOut'>The (possibly) easiest way to generate dummy data for WordPress is to use a plugin or any other tool that is designed specifically for WordPress because when you create a post, for example, you will also need some term relationships such as which categories the post belongs to or which tags the post is tagged with. As far as I know, there are two WordPress plugins that allow you to do this. Despite the fact that they are easy to use and designed for WordPress, I do not recommend using them at all… reason?
+The first plugin is called WP Dummy Content and is located here: http://wordpress.org/extend/plugins/wp-dummy-content/. It is small and lightweight but is outdated and should only be used if you are still wandering around WordPress 2.5 to 2.8.3, which is not cool at all.
+The second plugin is called Demo Data Creator (and Destroyer!!!) and is located here: http://wordpress.org/extend/plugins/demo-data-creator/. If you look at this plugin’s description and screenshot you will know that it is quite feature-rich but there are some features that can actually destroy your blog if you are not careful enough. If you have the time to read one of those support questions about this plugin1 (well you NEED to read it if you are planning on using this plugin), you might be shocked that this plugin can revert your website to null, i.e. no post, no comment, nothing. You will find no warning about such behaviour in the Description, Installation and FAQ tabs on this plugin’s official page, which is a very bad thing (now that I’ve warned you, be safe  ).</description>
         </slide>
     </slides>
+    <navigators>
+        <navigator id='prev' type='div' styleId='backBtnStyle' containerId='navigator_container' click='prevSlide'/>
+        <navigator id='next' type='div' styleId='nextBtnStyle' containerId='navigator_container' click='nextSlide'/>
+    </navigators>
     <styles>
         <style id='container1' position='absolute' width='70%' height='100%' left='0' text-align='center'></style>
-        <style id='imageListStyle' position='absolute' padding='0' margin='0' width='100%' height='100%' list-style-type='none' white-space='nowrap'></style>
-        <style id='imageLiContainer' padding='0' margin='0' width='100%' height='100%' position='absolute'></style>
-        <style id='imageStyle' display='block' border='none' padding='0' margin='0 auto'></style>
+        <style id='imageStyle' position='absolute' display='block' border='none' padding='0' margin='0'></style>
 
         <style id='container2' position='absolute' width='30%' height='100%' right='0'></style>
         <style id='headerStyle' position='absolute' top='10px' left='12px' margin='0' padding='0'></style>
         <style id='descStyle' position='absolute' top='40px' left='18px' margin='0' padding='0'></style>
+
+        <style id='navContStyle' position='absolute' width='100%' height='70px' top='150px'></style>
+        <style id='backBtnStyle' width='60px' height='70px' float='left' background-image='url("images/navigator.png")' moz-transform='scaleX(-1)'
+             o-transform='scaleX(-1)' webkit-transform='scaleX(-1)' transform='scaleX(-1)' filter='FlipH' ms-filter='FlipH'></style>
+        <style id='nextBtnStyle' width='60px' height='70px' float='right' background-image='url("images/navigator.png")'></style>
     </styles>
     <animations>
-        <animation type='fadeIn' duration='5000' id='slide_fadeIn' continue='false'/>
-        <animation type='fadeOut' duration='5000' id='slide_fadeOut' continue='true'/>
+        <animation type='fadeIn' duration='800' id='anim_fadeIn' continue='false' />
+        <animation type='fadeOut' duration='800' id='anim_fadeOut' continue='false' />
+        <animation type='slideDown' duration='1000' id='anim_SlideIn' continue='true'/>
+        <animation type='slideUp' duration='1000' id='anim_SlideOut' continue='true'/>
     </animations>
+
+
+    <!--<container type='ul' id='image_list' containerId='image_container' styleId='imageListStyle'></container>-->
+    <!--<list id='list1' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>-->
+    <!--<list id='list2' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>-->
+    <!--<list id='list3' type='li' styleId='imageLiContainer' containerId='image_list' excludeAnimation='true'></list>-->
+    <!--<style id='imageListStyle' position='absolute' padding='0' margin='0' width='100%' height='100%' list-style-type='none' white-space='nowrap'></style>
+        <style id='imageLiContainer' padding='0' margin='0' width='100%' height='100%' position='absolute'></style>-->
 </data>

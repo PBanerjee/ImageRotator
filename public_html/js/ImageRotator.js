@@ -77,8 +77,8 @@
         this.styles = [];
         //list of animations
         this.animations = [];
-        //list of slide elements as a batch
-        this.slideElems = [];
+        //list of navigators
+        this.navigators = [];
         //need to load or parse the data.
         this.dataObj = data;
         //start data fectching or parsing
@@ -90,11 +90,16 @@
         this.container = $("#"+containerDivID);
         //default options
         this.defaults = {
+            autoChange: true,
+            navigation: false,
             speed: 1000, //ms
             stay: 5000,
+            onGoingAnimation: 0,
             animating: false,
             currentSlide: null
         };
+        //initiate and bound the animation object
+        this.animationManager = new AnimationManager(this);
 
     };
 
@@ -107,7 +112,10 @@
         parseXML: function(xmlData){
             var imgRotator = this,
                 xmlDoc,
+                firstChld,
                 dataCues,
+                autoChange,
+                navigation,
                 i,
                 cue,
                 cueLength;
@@ -125,8 +133,16 @@
             }
 
             //now get the top level data cues to parse data
-            dataCues = $(xmlDoc.firstChild).attr('dataCues');
+            firstChld = $(xmlDoc.firstChild);
+            dataCues = firstChld.attr('dataCues');
             dataCues && (dataCues = dataCues.split(','));
+            //other top level attributes
+            imgRotator.defaults.autoChange = autoChange =
+                    firstChld.attr('autoChange') === 'true' ? true : false;
+
+            navigation = !autoChange;
+            //
+
             for(i = 0, cueLength = dataCues.length; i < cueLength; i += 1){
                 cue = dataCues[i];
                 $(xmlDoc).find(cue).each(function(){
@@ -173,12 +189,14 @@
                     globalArray = imgRotator[nodeName+'s'];
                     //if object has a id property for easy refernce
                     //store the objcet in the global array with id as key
-                    obj.id && (globalArray[obj.id] = obj);
+                    obj.id && globalArray && (globalArray[obj.id] = obj);
                     //store with index.
                     globalArray && globalArray.push(obj);
                 })
             };
-
+            //also update the animatons array in animation
+            //manager
+            this.animationManager.setAnimations(this.animations);
             //fire XML parse complete event
             this.event.dispatchEvent('xml-parsed');
         },
@@ -287,20 +305,23 @@
          * function render content
          */
         render: function(){
-            var slides = this.slides,
+            var imgRot = this,
+                slides = this.slides,
+                navigators = this.navigators,
                 containers = this.containers,
                 slide,
+                navigator,
                 elementObj,
+                navElem,
                 element,
-                containerElem,
                 numSlides = slides && slides.length,
-                containerId,
+                numOfNavigators = navigators && navigators.length,
+                clickMethod,
                 i;
 
             for(i = 0; i < numSlides; i += 1){
 
                 slide = slides[i];
-                this.slideElems[i] = {};
                 //iterate over each elements of a single slide
                 for(var prop in slide){
                     //only child elements of a slide node
@@ -308,13 +329,28 @@
                     if(slide[prop] instanceof Object){
                         elementObj = slide[prop];
                         element = this.createElement(elementObj);
-                        debugger;
                         if(elementObj.excludeAnimation !== 'true'){
-                            this.slideElems[i][prop] = element;
+                            elementObj.element = element;
                             element.hide();
+                            //all elements thus at begining is inactive
+                            element.active = false;
                         }
                     }
                 }
+            }
+
+            //create the navigaots if defined
+            for(i = 0; i < numOfNavigators; i += 1){
+                navigator = navigators[i];
+                navElem = this.createElement(navigator);
+                clickMethod = navigator.click;
+                //bind method to proper scope
+                (function(){
+                    var method = clickMethod;
+                    method && navElem.click(function(){
+                        imgRot[method].call(imgRot);
+                    })
+                })();
             }
             //fire the creation complete event
             this.event.dispatchEvent('creation-complete');
@@ -330,146 +366,69 @@
             }
         },
 
-        changeSlide: function(){
+        nextSlide: function(){
+            //just by-pass the call to changeSlide as changeSlide
+            //only moves to the next slide.
+            //only if no animation is on going
+            this.changeSlide();
+        },
+
+        prevSlide: function(){
+             //now as we need to navigate to the prev slide
+             //call the change slide with proper direction
+             this.changeSlide('prev');
+        },
+
+        changeSlide: function(direction){
             var imgRot = this,
+                AnimMngr = imgRot && imgRot.animationManager,
+                isAnimating = AnimMngr && AnimMngr.isAnimating() || false,
+                isPrev = direction === 'prev' ? true : false,
                 currentSlideNum = this.defaults.currentSlide,
                 slides = this.slides,
                 animations = this.animations,
                 slideElems = this.slideElems,
-                totalSlides = slideElems && slideElems.length,
+                totalSlides = slides && slides.length,
                 nextSlideNum,
                 currentSlideObj,
-                nextSlideObj,
-                currentSlideElem,
-                nextSlideElem,
-                hideAnimId,
-                showAnimId,
-                hideAnimObj,
-                showAnimObj,
-                overlappingAnim,
-                conCallBack;
+                nextSlideObj;
+
+            //if any animation is on going. ignore this call
+            if(isAnimating){
+                return;
+            }
 
             //if current slide is null (first time) and is not 0 (as zero will
             //also be evaluated to false), assign the base -1 current slide
             //number
             !currentSlideNum && currentSlideNum !== 0 && (currentSlideNum = -1);
-            //now based on the current slide get the next slide
-            nextSlideNum = currentSlideNum ===
+            //now based on the current slide and direction get the next slide
+            if(!isPrev){
+                nextSlideNum = currentSlideNum ===
                     (totalSlides - 1) ? 0 : currentSlideNum + 1;
+            }else{
+                nextSlideNum = currentSlideNum === 0
+                     ? (totalSlides - 1) : currentSlideNum - 1;
+            }
 
             //get slide objects and elements
-            currentSlideObj = slides[currentSlideNum] || {};
-            currentSlideElem = slideElems[currentSlideNum] || {};
-            hideAnimId = currentSlideObj.hideAnimId;
-            hideAnimObj = animations[hideAnimId];
-
+            currentSlideObj = slides[currentSlideNum];
             nextSlideObj = slides[nextSlideNum];
-            nextSlideElem = slideElems[nextSlideNum] || {};
-            showAnimId = nextSlideObj.showAnimId;
-            showAnimObj = animations[showAnimId];
 
-            //start the hide animation
-            if(hideAnimObj){
-                //if continuous animation is off
-                overlappingAnim = hideAnimObj.continue;
-
-                if(overlappingAnim === 'false'){
-                    conCallBack = function(){
-                        imgRot.initAnimation(showAnimObj, nextSlideElem,
-                                            imgRot.animationComplete,
-                                            imgRot.startStay);
-                    }
-
-                    this.initAnimation(hideAnimObj, currentSlideElem,
-                                this.animationComplete, conCallBack);
-
-                }
-                //if show and hide animation need to run simaltenously
-                //default case.
-                else{
-                    this.initAnimation(showAnimObj, nextSlideElem,
-                                this.animationComplete, this.startStay);
-                    this.initAnimation(hideAnimObj, currentSlideElem,
-                                this.animationComplete);
-
-                }
-
+            if(currentSlideObj || nextSlideObj){
+                this.animationManager.start(currentSlideObj, nextSlideObj, this.startStay);
             }
-            //in case no hide animation start the show animation
-            //first time execution
-            else if(showAnimObj){
-                this.initAnimation(showAnimObj, nextSlideElem,
-                                this.animationComplete, this.startStay);
-            }
+
+            //nextSlideObj && this.new_initAnimation(nextSlideObj, 'show');
             //update current slider
             this.defaults.currentSlide = nextSlideNum;
-        },
-
-        initAnimation: function(animObj, elementToAnimate,
-                                    callback, allCompleteCallback){
-
-            callback && (animObj.callback = callback);
-            allCompleteCallback &&
-                    (animObj.allCompleteCallback = allCompleteCallback);
-            elementToAnimate &&
-                    this.animate(elementToAnimate, animObj);
-
-        },
-
-        animate: function(elements, animObj){
-            var e,
-                elem,
-                scope = this,
-                noElems = 0;
-
-            if(animObj){
-                for(e in elements){
-                    elem = $(elements[e]);
-                    var obj = {
-                        duration: parseInt(animObj.duration),
-                        complete: function(){
-                            animObj.callback.call(scope,
-                                                    scope,
-                                                animObj.allCompleteCallback,
-                                                animObj);
-                        }
-                    };
-                    elem[animObj.type].call(elem, obj);
-                    //for each element animated we increase the counter
-                    noElems += 1;
-                }
-                //update to the class level variable
-                animObj.numAnimElems = noElems;
-            }
-        },
-
-        animationComplete: function(scope, callback, animObj){
-            var totalNumAnimElems = animObj.numAnimElems || 0,
-                completedNumAnim = animObj.numCompleteAnim || 0;
-
-            //scope is bound to imageRotator if undefined
-            scope = scope || this;
-            //increase the completed animation counter
-            completedNumAnim += 1;
-
-            if(completedNumAnim >= totalNumAnimElems){
-                //re state global counters
-                animObj.numCompleteAnim = 0;
-                animObj.numAnimElems = 0;
-                //need to initiate the callback process
-                //if defined
-                callback && callback.call(scope);
-                //no further excution from here
-                return;
-            }
-            //otherwise just increase the counter
-            animObj.numCompleteAnim = completedNumAnim;
         },
 
         startStay: function(){
             //from here after the stipulated stay time
             //fire the change slide method
             var imgRot = this,
+                autoChange = this.defaults.autoChnage,
                 stayDuration = this.defaults.stay;
 
             //fire the stay start event @todo: think better name
@@ -478,8 +437,8 @@
             setTimeout(function(){
                 //fire the stay complete event
                 imgRot.event.dispatchEvent('stay-complete');
-                //call for the next slide
-                imgRot.changeSlide.call(imgRot);
+                //call for the next slide only if autoChane is true
+                autoChange && imgRot.changeSlide.call(imgRot);
             },stayDuration);
         }
 
